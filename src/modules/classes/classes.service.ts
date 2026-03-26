@@ -1,0 +1,193 @@
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { CurrentUserData } from '../../common/decorators/current-user.decorator';
+import { Role } from '../../common/enums/role.enum';
+import { User } from '../users/entities/user.entity';
+import { CreateClassDto } from './dto/create-class.dto';
+import { UpdateClassDto } from './dto/update-class.dto';
+import { Class, ClassStatus } from './entities/class.entity';
+
+@Injectable()
+export class ClassesService {
+  constructor(
+    @InjectRepository(Class)
+    private readonly classRepository: Repository<Class>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
+
+  async create(actor: CurrentUserData, dto: CreateClassDto) {
+    if (actor.role !== Role.ADMIN) {
+      throw new ForbiddenException();
+    }
+
+    if (dto.homeroomTeacherId) {
+      const teacher = await this.userRepository.findOne({
+        where: { id: dto.homeroomTeacherId },
+      });
+      if (!teacher || teacher.role !== Role.TEACHER) {
+        throw new ForbiddenException('homeroomTeacherId is not a teacher');
+      }
+    }
+
+    const classEntity = this.classRepository.create({
+      name: dto.name,
+      grade: dto.grade,
+      academicYear: dto.academicYear,
+      homeroomTeacherId: dto.homeroomTeacherId,
+      maxStudents: dto.maxStudents ?? null,
+    });
+
+    return this.classRepository.save(classEntity);
+  }
+
+  async findAll(actor: CurrentUserData) {
+    if (actor.role === Role.ADMIN) {
+      return this.classRepository.find({
+        relations: ['homeroomTeacher', 'students'],
+      });
+    }
+
+    if (actor.role === Role.TEACHER) {
+      return this.classRepository.find({
+        where: { homeroomTeacherId: actor.userId },
+        relations: ['students'],
+      });
+    }
+
+    throw new ForbiddenException();
+  }
+
+  async findById(actor: CurrentUserData, id: string) {
+    const classEntity = await this.classRepository.findOne({
+      where: { id },
+      relations: ['homeroomTeacher', 'students'],
+    });
+    if (!classEntity) {
+      throw new NotFoundException();
+    }
+
+    if (actor.role === Role.ADMIN) {
+      return classEntity;
+    }
+
+    if (actor.role === Role.TEACHER) {
+      if (classEntity.homeroomTeacherId !== actor.userId) {
+        throw new ForbiddenException();
+      }
+      return classEntity;
+    }
+
+    throw new ForbiddenException();
+  }
+
+  async update(actor: CurrentUserData, id: string, dto: UpdateClassDto) {
+    if (actor.role !== Role.ADMIN) {
+      throw new ForbiddenException();
+    }
+
+    const classEntity = await this.classRepository.findOne({ where: { id } });
+    if (!classEntity) {
+      throw new NotFoundException();
+    }
+
+    if (dto.homeroomTeacherId) {
+      const teacher = await this.userRepository.findOne({
+        where: { id: dto.homeroomTeacherId },
+      });
+      if (!teacher || teacher.role !== Role.TEACHER) {
+        throw new ForbiddenException('homeroomTeacherId is not a teacher');
+      }
+    }
+
+    await this.classRepository.update(id, {
+      name: dto.name ?? classEntity.name,
+      grade: dto.grade ?? classEntity.grade,
+      academicYear: dto.academicYear ?? classEntity.academicYear,
+      homeroomTeacherId: dto.homeroomTeacherId ?? classEntity.homeroomTeacherId,
+      status: dto.status ?? classEntity.status,
+      maxStudents: dto.maxStudents ?? classEntity.maxStudents,
+    });
+
+    return this.classRepository.findOne({
+      where: { id },
+      relations: ['homeroomTeacher', 'students'],
+    });
+  }
+
+  async remove(actor: CurrentUserData, id: string) {
+    if (actor.role !== Role.ADMIN) {
+      throw new ForbiddenException();
+    }
+    const classEntity = await this.classRepository.findOne({ where: { id } });
+    if (!classEntity) {
+      throw new NotFoundException();
+    }
+    await this.classRepository.delete(id);
+    return { deleted: true };
+  }
+
+  async archive(actor: CurrentUserData, id: string) {
+    if (actor.role !== Role.ADMIN) {
+      throw new ForbiddenException();
+    }
+    const classEntity = await this.classRepository.findOne({ where: { id } });
+    if (!classEntity) {
+      throw new NotFoundException();
+    }
+    await this.classRepository.update(id, {
+      archivedAt: new Date(),
+      status: ClassStatus.CLOSED,
+    });
+    return this.classRepository.findOne({
+      where: { id },
+      relations: ['homeroomTeacher', 'students'],
+    });
+  }
+
+  async setStatus(actor: CurrentUserData, id: string, status: ClassStatus) {
+    if (actor.role !== Role.ADMIN) {
+      throw new ForbiddenException();
+    }
+    const classEntity = await this.classRepository.findOne({ where: { id } });
+    if (!classEntity) {
+      throw new NotFoundException();
+    }
+    await this.classRepository.update(id, { status });
+    return this.classRepository.findOne({
+      where: { id },
+      relations: ['homeroomTeacher', 'students'],
+    });
+  }
+
+  async clone(actor: CurrentUserData, id: string) {
+    if (actor.role !== Role.ADMIN) {
+      throw new ForbiddenException();
+    }
+    const source = await this.classRepository.findOne({ where: { id } });
+    if (!source) {
+      throw new NotFoundException();
+    }
+    const cloned = await this.classRepository.save(
+      this.classRepository.create({
+        name: `${source.name} (Clone)`,
+        grade: source.grade,
+        academicYear: source.academicYear,
+        homeroomTeacherId: source.homeroomTeacherId,
+        status: source.status,
+        maxStudents: source.maxStudents,
+        archivedAt: null,
+        clonedFromId: source.id,
+      }),
+    );
+    return this.classRepository.findOne({
+      where: { id: cloned.id },
+      relations: ['homeroomTeacher', 'students'],
+    });
+  }
+}
