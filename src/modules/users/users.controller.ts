@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   CurrentUser,
@@ -12,6 +12,7 @@ import { UsersService } from './users.service';
 import { SetActiveStudentDto } from './dto/set-active-student.dto';
 import { SetUserActiveDto } from './dto/set-user-active.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -52,23 +53,23 @@ export class UsersController {
 
   @Get()
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'List all users (admin only)' })
-  findAll() {
-    return this.usersService.findAll();
+  @ApiOperation({ summary: 'List all users with pagination (admin only)' })
+  findAll(@Query() query: PaginationQueryDto) {
+    return this.usersService.findAll(query);
   }
 
   @Get('teachers')
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'List teachers (admin)' })
-  listTeachers() {
-    return this.usersService.listByRole(Role.TEACHER);
+  @ApiOperation({ summary: 'List teachers with pagination (admin)' })
+  listTeachers(@Query() query: PaginationQueryDto) {
+    return this.usersService.listByRole(Role.TEACHER, query);
   }
 
   @Get('parents')
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'List parents (admin)' })
-  listParents() {
-    return this.usersService.listByRole(Role.PARENT);
+  @ApiOperation({ summary: 'List parents with pagination (admin)' })
+  listParents(@Query() query: PaginationQueryDto) {
+    return this.usersService.listByRole(Role.PARENT, query);
   }
 
   @Put(':id/active')

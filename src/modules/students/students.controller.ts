@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -18,6 +19,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { ClaimStudentDto } from './dto/claim-student.dto';
 import { LinkParentDto } from './dto/link-parent.dto';
+import { ListStudentQueryDto } from './dto/list-student-query.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { StudentsService } from './students.service';
 
@@ -39,9 +41,12 @@ export class StudentsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List students (admin/teacher)' })
-  findAll(@CurrentUser() actor: CurrentUserData) {
-    return this.studentsService.findAll(actor);
+  @ApiOperation({ summary: 'List students with pagination & filter (admin/teacher)' })
+  findAll(
+    @CurrentUser() actor: CurrentUserData,
+    @Query() query: ListStudentQueryDto,
+  ) {
+    return this.studentsService.findAll(actor, query);
   }
 
   @Get(':id')

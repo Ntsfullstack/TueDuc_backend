@@ -8,11 +8,13 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CurrentUserData } from '../../common/decorators/current-user.decorator';
+import { PaginatedResponse } from '../../common/dto/paginated-response.dto';
 import { Role } from '../../common/enums/role.enum';
 import { Class } from '../classes/entities/class.entity';
 import { User } from '../users/entities/user.entity';
 import { Student } from './entities/student.entity';
 import { CreateStudentDto } from './dto/create-student.dto';
+import { ListStudentQueryDto } from './dto/list-student-query.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 
 @Injectable()
@@ -92,28 +94,55 @@ export class StudentsService {
     });
   }
 
-  async findAll(actor: CurrentUserData) {
-    if (actor.role === Role.ADMIN) {
-      return this.studentRepository.find({ relations: ['class', 'parent'] });
-    }
+  async findAll(
+    actor: CurrentUserData,
+    query: ListStudentQueryDto,
+  ): Promise<PaginatedResponse<Student>> {
+    const { page = 1, limit = 20, search, classId, status, gender } = query;
 
-    if (actor.role === Role.TEACHER) {
+    const qb = this.studentRepository
+      .createQueryBuilder('student')
+      .leftJoinAndSelect('student.class', 'class')
+      .leftJoinAndSelect('student.parent', 'parent');
+
+    if (actor.role === Role.ADMIN) {
+      // Admin sees all
+    } else if (actor.role === Role.TEACHER) {
       const myClasses = await this.classRepository.find({
         where: { homeroomTeacherId: actor.userId },
       });
       const classIds = myClasses.map((c) => c.id);
       if (classIds.length === 0) {
-        return [];
+        return new PaginatedResponse([], 0, page, limit);
       }
-      return this.studentRepository
-        .createQueryBuilder('student')
-        .leftJoinAndSelect('student.class', 'class')
-        .leftJoinAndSelect('student.parent', 'parent')
-        .where('student.classId IN (:...classIds)', { classIds })
-        .getMany();
+      qb.andWhere('student.classId IN (:...classIds)', { classIds });
+    } else {
+      throw new ForbiddenException();
     }
 
-    throw new ForbiddenException();
+    // Search by name or studentCode
+    if (search) {
+      qb.andWhere(
+        '(student.name ILIKE :search OR student.studentCode ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (classId) {
+      qb.andWhere('student.classId = :classId', { classId });
+    }
+    if (status) {
+      qb.andWhere('student.status = :status', { status });
+    }
+    if (gender) {
+      qb.andWhere('student.gender = :gender', { gender });
+    }
+
+    qb.skip((page - 1) * limit).take(limit);
+    qb.orderBy('student.createdAt', 'DESC');
+
+    const [data, total] = await qb.getManyAndCount();
+    return new PaginatedResponse(data, total, page, limit);
   }
 
   async findById(actor: CurrentUserData, id: string) {

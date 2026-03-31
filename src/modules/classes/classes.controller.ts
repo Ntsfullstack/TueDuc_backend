@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -16,6 +17,7 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CreateClassDto } from './dto/create-class.dto';
+import { ListClassQueryDto } from './dto/list-class-query.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
 import { ClassesService } from './classes.service';
 import { ClassStatus } from './entities/class.entity';
@@ -32,9 +34,12 @@ export class ClassesController {
   constructor(private readonly classesService: ClassesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List classes (admin/teacher)' })
-  findAll(@CurrentUser() actor: CurrentUserData) {
-    return this.classesService.findAll(actor);
+  @ApiOperation({ summary: 'List classes with pagination & filter (admin/teacher)' })
+  findAll(
+    @CurrentUser() actor: CurrentUserData,
+    @Query() query: ListClassQueryDto,
+  ) {
+    return this.classesService.findAll(actor, query);
   }
 
   @Get(':id')

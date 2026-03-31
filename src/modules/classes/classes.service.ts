@@ -6,9 +6,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CurrentUserData } from '../../common/decorators/current-user.decorator';
+import { PaginatedResponse } from '../../common/dto/paginated-response.dto';
 import { Role } from '../../common/enums/role.enum';
 import { User } from '../users/entities/user.entity';
 import { CreateClassDto } from './dto/create-class.dto';
+import { ListClassQueryDto } from './dto/list-class-query.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
 import { Class, ClassStatus } from './entities/class.entity';
 
@@ -46,21 +48,45 @@ export class ClassesService {
     return this.classRepository.save(classEntity);
   }
 
-  async findAll(actor: CurrentUserData) {
-    if (actor.role === Role.ADMIN) {
-      return this.classRepository.find({
-        relations: ['homeroomTeacher', 'students'],
-      });
-    }
+  async findAll(
+    actor: CurrentUserData,
+    query: ListClassQueryDto,
+  ): Promise<PaginatedResponse<Class>> {
+    const { page = 1, limit = 20, search, status, grade, academicYear } = query;
 
+    const qb = this.classRepository
+      .createQueryBuilder('class')
+      .leftJoinAndSelect('class.homeroomTeacher', 'homeroomTeacher')
+      .leftJoinAndSelect('class.students', 'students');
+
+    // Role-based access
     if (actor.role === Role.TEACHER) {
-      return this.classRepository.find({
-        where: { homeroomTeacherId: actor.userId },
-        relations: ['students'],
+      qb.andWhere('class.homeroomTeacherId = :teacherId', {
+        teacherId: actor.userId,
       });
+    } else if (actor.role !== Role.ADMIN) {
+      throw new ForbiddenException();
     }
 
-    throw new ForbiddenException();
+    // Filters
+    if (search) {
+      qb.andWhere('class.name ILIKE :search', { search: `%${search}%` });
+    }
+    if (status) {
+      qb.andWhere('class.status = :status', { status });
+    }
+    if (grade) {
+      qb.andWhere('class.grade = :grade', { grade });
+    }
+    if (academicYear) {
+      qb.andWhere('class.academicYear = :academicYear', { academicYear });
+    }
+
+    qb.skip((page - 1) * limit).take(limit);
+    qb.orderBy('class.createdAt', 'DESC');
+
+    const [data, total] = await qb.getManyAndCount();
+    return new PaginatedResponse(data, total, page, limit);
   }
 
   async findById(actor: CurrentUserData, id: string) {

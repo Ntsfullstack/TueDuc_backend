@@ -5,6 +5,8 @@ import { User } from './entities/user.entity';
 import { Student } from '../students/entities/student.entity';
 import * as bcrypt from 'bcrypt';
 import { Role } from '../../common/enums/role.enum';
+import { PaginatedResponse } from '../../common/dto/paginated-response.dto';
+import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
 @Injectable()
 export class UsersService {
@@ -35,12 +37,49 @@ export class UsersService {
     return user;
   }
 
-  async findAll(): Promise<User[]> {
-    return this.userRepository.find();
+  async findAll(
+    query: PaginationQueryDto = {},
+  ): Promise<PaginatedResponse<User>> {
+    const { page = 1, limit = 20, search } = query;
+
+    const qb = this.userRepository.createQueryBuilder('user');
+
+    if (search) {
+      qb.andWhere(
+        '(user.name ILIKE :search OR user.email ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    qb.skip((page - 1) * limit).take(limit);
+    qb.orderBy('user.createdAt', 'DESC');
+
+    const [data, total] = await qb.getManyAndCount();
+    return new PaginatedResponse(data, total, page, limit);
   }
 
-  async listByRole(role: Role) {
-    return this.userRepository.find({ where: { role } });
+  async listByRole(
+    role: Role,
+    query: PaginationQueryDto = {},
+  ): Promise<PaginatedResponse<User>> {
+    const { page = 1, limit = 20, search } = query;
+
+    const qb = this.userRepository
+      .createQueryBuilder('user')
+      .andWhere('user.role = :role', { role });
+
+    if (search) {
+      qb.andWhere(
+        '(user.name ILIKE :search OR user.email ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    qb.skip((page - 1) * limit).take(limit);
+    qb.orderBy('user.createdAt', 'DESC');
+
+    const [data, total] = await qb.getManyAndCount();
+    return new PaginatedResponse(data, total, page, limit);
   }
 
   async setActive(id: string, isActive: boolean) {

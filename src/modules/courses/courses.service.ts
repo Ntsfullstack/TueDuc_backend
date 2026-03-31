@@ -6,10 +6,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CurrentUserData } from '../../common/decorators/current-user.decorator';
+import { PaginatedResponse } from '../../common/dto/paginated-response.dto';
 import { Role } from '../../common/enums/role.enum';
 import { Class } from '../classes/entities/class.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateCourseDto } from './dto/create-course.dto';
+import { ListCourseQueryDto } from './dto/list-course-query.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { Course } from './entities/course.entity';
 
@@ -56,19 +58,49 @@ export class CoursesService {
     return this.courseRepository.save(course);
   }
 
-  async findAll(actor: CurrentUserData) {
+  async findAll(
+    actor: CurrentUserData,
+    query: ListCourseQueryDto,
+  ): Promise<PaginatedResponse<Course>> {
+    const { page = 1, limit = 20, search, classId, teacherId } = query;
+
+    const qb = this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndSelect('course.class', 'class')
+      .leftJoinAndSelect('course.teacher', 'teacher');
+
     if (actor.role === Role.ADMIN) {
-      return this.courseRepository.find({ relations: ['class', 'teacher'] });
+      // no restriction
+    } else if (actor.role === Role.TEACHER) {
+      qb.andWhere('course.teacherId = :teacherId', { teacherId: actor.userId });
+    } else {
+      throw new ForbiddenException();
     }
 
-    if (actor.role === Role.TEACHER) {
-      return this.courseRepository.find({
-        where: { teacherId: actor.userId },
-        relations: ['class'],
+    // Search by name or course code
+    if (search) {
+      qb.andWhere(
+        '(course.name ILIKE :search OR course.code ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (classId) {
+      qb.andWhere('course.classId = :classId', { classId });
+    }
+
+    // Admin can also filter by specific teacherId
+    if (teacherId && actor.role === Role.ADMIN) {
+      qb.andWhere('course.teacherId = :filterTeacherId', {
+        filterTeacherId: teacherId,
       });
     }
 
-    throw new ForbiddenException();
+    qb.skip((page - 1) * limit).take(limit);
+    qb.orderBy('course.createdAt', 'DESC');
+
+    const [data, total] = await qb.getManyAndCount();
+    return new PaginatedResponse(data, total, page, limit);
   }
 
   async findById(actor: CurrentUserData, id: string) {
@@ -133,3 +165,4 @@ export class CoursesService {
     return this.findById(actor, id);
   }
 }
+
