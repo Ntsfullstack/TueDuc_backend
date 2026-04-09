@@ -4,6 +4,13 @@ Base URL: `http://localhost:3000`
 
 Swagger: `http://localhost:3000/api/docs`
 
+## Common Query Parameters (List Endpoints)
+Hầu hết các API trả về danh sách đều hỗ trợ phân trang và tìm kiếm:
+- `page` (number, default: 1): Trang hiện tại
+- `limit` (number, default: 20): Số lượng bản ghi mỗi trang
+- `search` (string, optional): Tìm kiếm theo tên/email/mã tùy module
+- **Response Format**: Trả về dạng `{ data, total, page, limit, totalPages }`
+
 ## Auth
 
 ### POST `/auth/register`
@@ -47,12 +54,15 @@ Swagger: `http://localhost:3000/api/docs`
 
 ### GET `/users`
 - Quyền: `admin`
+- Query: `page`, `limit`, `search`
 
 ### GET `/users/teachers`
 - Quyền: `admin`
+- Query: `page`, `limit`, `search`
 
 ### GET `/users/parents`
 - Quyền: `admin`
+- Query: `page`, `limit`, `search`
 
 ### PUT `/users/:id/active`
 - Quyền: `admin`
@@ -69,6 +79,7 @@ Swagger: `http://localhost:3000/api/docs`
 
 ### GET `/classes`
 - Quyền: `admin|teacher`
+- Query: `page`, `limit`, `search`, `status`, `grade`, `academicYear`
 - Mô tả:
   - `admin`: xem tất cả
   - `teacher`: chỉ xem lớp chủ nhiệm
@@ -103,6 +114,7 @@ Swagger: `http://localhost:3000/api/docs`
 
 ### GET `/students`
 - Quyền: `admin|teacher`
+- Query: `page`, `limit`, `search`, `classId`, `status`, `gender`
 
 ### GET `/students/my`
 - Quyền: `parent`
@@ -157,6 +169,7 @@ Swagger: `http://localhost:3000/api/docs`
 
 ### GET `/courses`
 - Quyền: `admin|teacher`
+- Query: `page`, `limit`, `search`, `classId`, `teacherId`
 - Mô tả:
   - `admin`: xem tất cả
   - `teacher`: chỉ xem course được gán
@@ -229,8 +242,12 @@ Swagger: `http://localhost:3000/api/docs`
 
 ### GET `/homeworks`
 - Quyền: `admin|teacher|parent`
-- Query (optional):
-  - `studentId` (parent): lọc bài tập theo 1 bé cụ thể
+- Query: `page`, `limit`, `search`, `classId`, `teacherId` (admin), `studentId` (parent)
+- Mô tả:
+  - `admin`: Xem toàn bộ.
+  - `teacher`: Xem bài tập tự tạo HOẶC bài tập của lớp mình làm chủ nhiệm. Hỗ trợ lọc theo `classId`.
+  - `parent`: Xem bài tập của con (lọc theo `studentId`).
+- **Response Format**: Trả về thêm field `stats: { totalStudents, submittedCount }` cho mỗi bài tập để hiển thị tiến độ làm bài trên UI.
 
 ### POST `/homeworks`
 - Quyền: `teacher|admin`
@@ -367,12 +384,23 @@ Swagger: `http://localhost:3000/api/docs`
 - Quyền: `parent|teacher|admin` (lọc theo quyền)
 - Mô tả: Lịch học của học sinh trong ngày (theo ca)
 
-### GET `/schedules/teacher/me?date=YYYY-MM-DD`
+### GET `/schedules/teacher/me`
 - Quyền: `teacher|admin`
+- Query: `date` (YYYY-MM-DD, optional - mặc định là hôm nay)
 - Mô tả: Lịch dạy của giáo viên trong ngày (theo ca)
 
-### GET `/schedules/teacher/:teacherId?date=YYYY-MM-DD`
+### GET `/schedules/teacher/today`
+- Quyền: `teacher`
+- Mô tả: Shortcut lấy lịch dạy hôm nay
+
+### GET `/schedules/teacher/me/week`
+- Quyền: `teacher`
+- Query: `startDate` (YYYY-MM-DD)
+- Mô tả: Xem lịch dạy theo tuần (dùng cho tính năng Next/Prev week)
+
+### GET `/schedules/teacher/:teacherId`
 - Quyền: `admin`
+- Query: `date` (optional)
 
 ### GET `/schedules/center/week?start=YYYY-MM-DD`
 - Quyền: `admin`

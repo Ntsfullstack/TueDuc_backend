@@ -30,6 +30,7 @@ import { GradeSubmissionDto } from './dto/grade-submission.dto';
 import { SubmitEssayDto } from './dto/submit-essay.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { UpdateHomeworkDto } from './dto/update-homework.dto';
+import { ListHomeworkQueryDto } from './dto/list-homework-query.dto';
 import { HomeworksService } from './homeworks.service';
 
 @ApiTags('homeworks')
@@ -43,9 +44,9 @@ export class HomeworksController {
   @ApiOperation({ summary: 'List homeworks (admin/teacher/parent)' })
   list(
     @CurrentUser() actor: CurrentUserData,
-    @Query('studentId') studentId?: string,
+    @Query() query: ListHomeworkQueryDto,
   ) {
-    return this.homeworksService.list(actor, studentId);
+    return this.homeworksService.list(actor, query);
   }
 
   @Post()

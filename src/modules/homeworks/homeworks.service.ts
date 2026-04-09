@@ -4,14 +4,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { CurrentUserData } from '../../common/decorators/current-user.decorator';
+import { PaginatedResponse } from '../../common/dto/paginated-response.dto';
 import { Role } from '../../common/enums/role.enum';
 import { Class } from '../classes/entities/class.entity';
 import { Student } from '../students/entities/student.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateHomeworkDto } from './dto/create-homework.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
+import { ListHomeworkQueryDto } from './dto/list-homework-query.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { UpdateHomeworkDto } from './dto/update-homework.dto';
 import {
@@ -265,96 +267,94 @@ export class HomeworksService {
     return targets.some((t) => studentIds.has(t.studentId));
   }
 
-  async list(actor: CurrentUserData, studentId?: string) {
+  async list(actor: CurrentUserData, query: ListHomeworkQueryDto) {
+    const { page = 1, limit = 20, search, classId, teacherId, studentId } = query;
+    const qb = this.homeworkRepository.createQueryBuilder('homework')
+      .leftJoinAndSelect('homework.class', 'class')
+      .leftJoinAndSelect('homework.teacher', 'teacher')
+      .leftJoinAndSelect('homework.targets', 'targets');
+
+    if (search) {
+      qb.andWhere('homework.title ILIKE :search', { search: `%${search}%` });
+    }
+
     if (actor.role === Role.ADMIN) {
-      const list = await this.homeworkRepository.find({
-        relations: ['class', 'teacher', 'targets'],
-      });
-      return list.map((h) => this.stripQuizAnswersIfNeeded(actor, h));
-    }
-
-    if (actor.role === Role.TEACHER) {
-      const list = await this.homeworkRepository.find({
-        where: { teacherId: actor.userId },
-        relations: ['class', 'teacher', 'targets'],
-      });
-      return list.map((h) => this.stripQuizAnswersIfNeeded(actor, h));
-    }
-
-    if (actor.role === Role.PARENT) {
-      if (studentId) {
-        const child = await this.studentRepository.findOne({
-          where: { id: studentId, parentId: actor.userId },
-        });
-        if (!child) {
-          throw new ForbiddenException();
-        }
-
-        const query = this.homeworkRepository.createQueryBuilder('homework');
-        query.leftJoinAndSelect('homework.teacher', 'teacher');
-        query.leftJoinAndSelect('homework.class', 'class');
-        query.leftJoinAndSelect('homework.targets', 'targets');
-        query.where(
-          'homework.targetScope = :scopeClass AND homework.classId = :classId',
-          {
-            scopeClass: HomeworkTargetScope.CLASS,
-            classId: child.classId,
-          },
-        );
-        query.orWhere(
-          'homework.targetScope = :scopeStudents AND targets.studentId = :studentId',
-          {
-            scopeStudents: HomeworkTargetScope.STUDENTS,
-            studentId: child.id,
-          },
-        );
-
-        const list = await query.getMany();
-        const unique = new Map(list.map((h) => [h.id, h]));
-        return Array.from(unique.values()).map((h) =>
-          this.stripQuizAnswersIfNeeded(actor, h),
-        );
-      }
-
+      if (classId) qb.andWhere('homework.classId = :classId', { classId });
+      if (teacherId) qb.andWhere('homework.teacherId = :teacherId', { teacherId });
+    } else if (actor.role === Role.TEACHER) {
+      // Teacher can see homeworks they created OR homeworks for classes they manage as homeroom teacher
+      qb.andWhere(
+        '(homework.teacherId = :actorId OR class.homeroomTeacherId = :actorId)',
+        { actorId: actor.userId },
+      );
+      if (classId) qb.andWhere('homework.classId = :classId', { classId });
+    } else if (actor.role === Role.PARENT) {
+      const parentChildId = studentId; // If provided, filter by specific child
       const children = await this.studentRepository.find({
         where: { parentId: actor.userId },
       });
-      const childIds = children.map((c) => c.id);
-      const classIds = Array.from(
-        new Set(children.map((c) => c.classId).filter(Boolean)),
-      );
-
-      const query = this.homeworkRepository.createQueryBuilder('homework');
-      query.leftJoinAndSelect('homework.teacher', 'teacher');
-      query.leftJoinAndSelect('homework.class', 'class');
-      query.leftJoinAndSelect('homework.targets', 'targets');
-      query.where(
-        'homework.targetScope = :scopeClass AND homework.classId IN (:...classIds)',
-        {
-          scopeClass: HomeworkTargetScope.CLASS,
-          classIds: classIds.length
-            ? classIds
-            : ['00000000-0000-0000-0000-000000000000'],
-        },
-      );
-      if (childIds.length) {
-        query.orWhere(
-          'homework.targetScope = :scopeStudents AND targets.studentId IN (:...childIds)',
-          {
-            scopeStudents: HomeworkTargetScope.STUDENTS,
-            childIds,
-          },
-        );
+      const allChildIds = children.map((c) => c.id);
+      const filteredChildIds = parentChildId ? [parentChildId] : allChildIds;
+      
+      if (filteredChildIds.length === 0) {
+        return new PaginatedResponse([], 0, page, limit);
       }
 
-      const list = await query.getMany();
-      const unique = new Map(list.map((h) => [h.id, h]));
-      return Array.from(unique.values()).map((h) =>
-        this.stripQuizAnswersIfNeeded(actor, h),
+      const classIds = Array.from(
+        new Set(children.filter(c => filteredChildIds.includes(c.id)).map((c) => c.classId).filter(Boolean)),
+      );
+
+      qb.andWhere(
+        new Brackets((innerQb) => {
+          innerQb.where(
+            'homework.targetScope = :scopeClass AND homework.classId IN (:...classIds)',
+            { scopeClass: HomeworkTargetScope.CLASS, classIds: classIds.length ? classIds : ['00000000-0000-0000-0000-000000000000'] }
+          );
+          innerQb.orWhere(
+            'homework.targetScope = :scopeStudents AND targets.studentId IN (:...childIds)',
+            { scopeStudents: HomeworkTargetScope.STUDENTS, childIds: filteredChildIds }
+          );
+        })
       );
     }
 
-    throw new ForbiddenException();
+    qb.skip((page - 1) * limit).take(limit);
+    qb.orderBy('homework.createdAt', 'DESC');
+
+    const [list, totalRecords] = await qb.getManyAndCount();
+
+    const data = await Promise.all(
+      list.map(async (h) => {
+        const stripped = this.stripQuizAnswersIfNeeded(actor, h);
+
+        // Calculate total target students
+        let totalStudents = 0;
+        if (h.targetScope === HomeworkTargetScope.CLASS) {
+          totalStudents = await this.studentRepository.count({
+            where: { classId: h.classId },
+          });
+        } else {
+          totalStudents = await this.targetRepository.count({
+            where: { homeworkId: h.id },
+          });
+        }
+
+        // Calculate submitted students
+        const submittedCount = await this.submissionRepository.count({
+          where: { homeworkId: h.id },
+        });
+
+        return {
+          ...stripped,
+          stats: {
+            totalStudents,
+            submittedCount,
+          },
+        };
+      }),
+    );
+
+    return new PaginatedResponse(data, totalRecords, page, limit);
   }
 
   async submitQuiz(
