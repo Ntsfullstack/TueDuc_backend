@@ -59,12 +59,27 @@ export class SchedulesController {
   }
 
   @Get('teacher/me')
-  @ApiOperation({ summary: 'Get teacher schedule by date (teacher/admin)' })
+  @ApiOperation({ summary: 'Get teacher schedule (default today)' })
   teacherSchedule(
     @CurrentUser() actor: CurrentUserData,
-    @Query('date') date: string,
+    @Query('date') date?: string,
   ) {
     return this.schedulesService.getTeacherScheduleByDate(actor, date);
+  }
+
+  @Get('teacher/today')
+  @ApiOperation({ summary: 'Shortcut for teacher schedule today' })
+  teacherToday(@CurrentUser() actor: CurrentUserData) {
+    return this.schedulesService.getTeacherScheduleByDate(actor);
+  }
+
+  @Get('teacher/me/week')
+  @ApiOperation({ summary: 'Get teacher schedule for a specific week' })
+  teacherWeek(
+    @CurrentUser() actor: CurrentUserData,
+    @Query('startDate') startDate: string,
+  ) {
+    return this.schedulesService.getTeacherScheduleWeek(actor, startDate);
   }
 
   @Get('teacher/:teacherId')
@@ -72,7 +87,7 @@ export class SchedulesController {
   teacherScheduleById(
     @CurrentUser() actor: CurrentUserData,
     @Param('teacherId') teacherId: string,
-    @Query('date') date: string,
+    @Query('date') date?: string,
   ) {
     return this.schedulesService.getTeacherScheduleByDateForTeacher(
       actor,

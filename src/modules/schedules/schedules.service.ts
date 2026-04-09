@@ -138,11 +138,11 @@ export class SchedulesService {
     });
   }
 
-  async getTeacherScheduleByDate(actor: CurrentUserData, date: string) {
+  async getTeacherScheduleByDate(actor: CurrentUserData, date?: string) {
     if (actor.role !== Role.TEACHER && actor.role !== Role.ADMIN) {
       throw new ForbiddenException();
     }
-    const weekday = this.weekdayFromDate(date);
+    const weekday = this.weekdayFromDate(date || new Date().toISOString());
     const teacherId = actor.userId;
     return this.scheduleRepository.find({
       where: { teacherId, weekday },
@@ -150,10 +150,22 @@ export class SchedulesService {
     });
   }
 
+  async getTeacherScheduleWeek(actor: CurrentUserData, startDate: string) {
+    if (actor.role !== Role.TEACHER && actor.role !== Role.ADMIN) {
+      throw new ForbiddenException();
+    }
+    const teacherId = actor.userId;
+    const items = await this.scheduleRepository.find({
+      where: { teacherId },
+      relations: ['class', 'shift', 'teacher'],
+    });
+    return { startDate, items };
+  }
+
   async getTeacherScheduleByDateForTeacher(
     actor: CurrentUserData,
     teacherId: string,
-    date: string,
+    date?: string,
   ) {
     if (actor.role !== Role.ADMIN) {
       throw new ForbiddenException();
@@ -164,7 +176,7 @@ export class SchedulesService {
     if (!teacher || teacher.role !== Role.TEACHER) {
       throw new NotFoundException('teacher not found');
     }
-    const weekday = this.weekdayFromDate(date);
+    const weekday = this.weekdayFromDate(date || new Date().toISOString());
     return this.scheduleRepository.find({
       where: { teacherId, weekday },
       relations: ['class', 'shift', 'teacher'],
