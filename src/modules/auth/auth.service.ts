@@ -37,11 +37,15 @@ export class AuthService {
       role: Role.PARENT, // Force role to PARENT for public registration
     });
 
+    const payload = { sub: user.id, email: user.email, role: user.role };
     return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
     };
   }
 

@@ -22,6 +22,7 @@ Hầu hết các API trả về danh sách đều hỗ trợ phân trang và tì
   - `name` (string)
   - `phoneNumber` (string)
 - **Lưu ý**: Endpoint này chỉ cho phép đăng ký với Role mặc định là `PARENT`. Mọi giá trị `role` truyền lên sẽ bị hệ thống bỏ qua để đảm bảo an toàn.
+- **Response**: Trả về `access_token` và thông tin `user` để ứng dụng có thể đăng nhập tự động ngay sau khi đăng ký thành công.
 
 ### POST `/auth/login`
 - Quyền: Public
