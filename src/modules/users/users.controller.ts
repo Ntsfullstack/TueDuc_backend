@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   CurrentUser,
@@ -12,7 +12,9 @@ import { UsersService } from './users.service';
 import { SetActiveStudentDto } from './dto/set-active-student.dto';
 import { SetUserActiveDto } from './dto/set-user-active.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import * as bcrypt from 'bcrypt';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -20,6 +22,17 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Post()
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Create new user (admin only)' })
+  async create(@Body() dto: CreateUserDto) {
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    return this.usersService.create({
+      ...dto,
+      password: hashedPassword,
+    });
+  }
 
   @Get('me')
   @ApiOperation({ summary: 'Get current user' })

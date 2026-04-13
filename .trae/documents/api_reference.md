@@ -15,13 +15,13 @@ Hầu hết các API trả về danh sách đều hỗ trợ phân trang và tì
 
 ### POST `/auth/register`
 - Quyền: Public
-- Mô tả: Tạo user theo role `admin|teacher|parent`
+- Mô tả: Đăng ký tài khoản dành cho Phụ huynh.
 - Body:
   - `email` (string)
   - `password` (string)
   - `name` (string)
-  - `phoneNumber` (string, Vietnamese format)
-  - `role` (`admin|teacher|parent`)
+  - `phoneNumber` (string)
+- **Lưu ý**: Endpoint này chỉ cho phép đăng ký với Role mặc định là `PARENT`. Mọi giá trị `role` truyền lên sẽ bị hệ thống bỏ qua để đảm bảo an toàn.
 
 ### POST `/auth/login`
 - Quyền: Public
@@ -52,6 +52,11 @@ Hầu hết các API trả về danh sách đều hỗ trợ phân trang và tì
 - Body:
   - `studentId`
 - Mô tả: Switch giữa các con bằng cách set active child
+
+### POST `/users`
+- Quyền: `admin`
+- Body: `CreateUserDto` (email, password, name, phoneNumber, role)
+- Mô tả: Admin tạo mới người dùng với Role bất kỳ (Giáo viên, Phụ huynh, hoặc Admin khác).
 
 ### GET `/users`
 - Quyền: `admin`
