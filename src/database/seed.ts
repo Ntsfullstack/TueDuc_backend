@@ -35,7 +35,7 @@ async function seed() {
       Homework, HomeworkTarget, HomeworkSubmission,
       Assessment, TeacherSalaryRate, StudentTuitionPlan, TuitionPayment
     ],
-    synchronize: false,
+    synchronize: true,
   });
 
   await dataSource.initialize();
