@@ -20,6 +20,7 @@ Hầu hết các API trả về danh sách đều hỗ trợ phân trang và tì
   - `email` (string)
   - `password` (string)
   - `name` (string)
+  - `phoneNumber` (string, Vietnamese format)
   - `role` (`admin|teacher|parent`)
 
 ### POST `/auth/login`

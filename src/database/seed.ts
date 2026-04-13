@@ -82,22 +82,23 @@ async function seed() {
     password: hashedPassword,
     name: 'Admin Hệ Thống',
     role: Role.ADMIN,
+    phoneNumber: '0900000000',
   }));
 
   const teachers = await userRepo.save([
-    { email: 'teacher1@tueduc.edu.vn', password: hashedPassword, name: 'Nguyễn Văn A', role: Role.TEACHER },
-    { email: 'teacher2@tueduc.edu.vn', password: hashedPassword, name: 'Trần Thị B', role: Role.TEACHER },
-    { email: 'teacher3@tueduc.edu.vn', password: hashedPassword, name: 'Lê Văn C', role: Role.TEACHER },
-    { email: 'teacher4@tueduc.edu.vn', password: hashedPassword, name: 'Phạm Thị D', role: Role.TEACHER },
-    { email: 'teacher5@tueduc.edu.vn', password: hashedPassword, name: 'Hoàng Văn E', role: Role.TEACHER },
+    { email: 'teacher1@tueduc.edu.vn', password: hashedPassword, name: 'Nguyễn Văn A', role: Role.TEACHER, phoneNumber: '0910000001' },
+    { email: 'teacher2@tueduc.edu.vn', password: hashedPassword, name: 'Trần Thị B', role: Role.TEACHER, phoneNumber: '0910000002' },
+    { email: 'teacher3@tueduc.edu.vn', password: hashedPassword, name: 'Lê Văn C', role: Role.TEACHER, phoneNumber: '0910000003' },
+    { email: 'teacher4@tueduc.edu.vn', password: hashedPassword, name: 'Phạm Thị D', role: Role.TEACHER, phoneNumber: '0910000004' },
+    { email: 'teacher5@tueduc.edu.vn', password: hashedPassword, name: 'Hoàng Văn E', role: Role.TEACHER, phoneNumber: '0910000005' },
   ].map(u => userRepo.create(u)));
 
   const parents = await userRepo.save([
-    { email: 'parent1@gmail.com', password: hashedPassword, name: 'Phụ Huynh 1', role: Role.PARENT },
-    { email: 'parent2@gmail.com', password: hashedPassword, name: 'Phụ Huynh 2', role: Role.PARENT },
-    { email: 'parent3@gmail.com', password: hashedPassword, name: 'Phụ Huynh 3', role: Role.PARENT },
-    { email: 'parent4@gmail.com', password: hashedPassword, name: 'Phụ Huynh 4', role: Role.PARENT },
-    { email: 'parent5@gmail.com', password: hashedPassword, name: 'Phụ Huynh 5', role: Role.PARENT },
+    { email: 'parent1@gmail.com', password: hashedPassword, name: 'Phụ Huynh 1', role: Role.PARENT, phoneNumber: '0920000001' },
+    { email: 'parent2@gmail.com', password: hashedPassword, name: 'Phụ Huynh 2', role: Role.PARENT, phoneNumber: '0920000002' },
+    { email: 'parent3@gmail.com', password: hashedPassword, name: 'Phụ Huynh 3', role: Role.PARENT, phoneNumber: '0920000003' },
+    { email: 'parent4@gmail.com', password: hashedPassword, name: 'Phụ Huynh 4', role: Role.PARENT, phoneNumber: '0920000004' },
+    { email: 'parent5@gmail.com', password: hashedPassword, name: 'Phụ Huynh 5', role: Role.PARENT, phoneNumber: '0920000005' },
   ].map(u => userRepo.create(u)));
 
   // 2. Seed Shifts

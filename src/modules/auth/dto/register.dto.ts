@@ -4,6 +4,7 @@ import {
   IsString,
   MinLength,
   IsEnum,
+  Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Role } from '../../../common/enums/role.enum';
@@ -32,4 +33,12 @@ export class RegisterDto {
   @IsEnum(Role)
   @IsNotEmpty()
   role: Role;
+
+  @ApiProperty({ example: '0912345678', description: 'User phone number' })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/(84|0[3|5|7|8|9])+([0-9]{8})\b/, {
+    message: 'Invalid Vietnamese phone number',
+  })
+  phoneNumber: string;
 }
