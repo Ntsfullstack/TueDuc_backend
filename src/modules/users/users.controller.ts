@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   CurrentUser,
@@ -13,6 +13,7 @@ import { SetActiveStudentDto } from './dto/set-active-student.dto';
 import { SetUserActiveDto } from './dto/set-user-active.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import * as bcrypt from 'bcrypt';
 
@@ -38,6 +39,15 @@ export class UsersController {
   @ApiOperation({ summary: 'Get current user' })
   me(@CurrentUser() user: CurrentUserData) {
     return this.usersService.findById(user.userId);
+  }
+
+  @Patch('me')
+  @ApiOperation({ summary: 'Update my profile' })
+  updateProfile(
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.usersService.updateProfile(user.userId, dto);
   }
 
   @Get('me/children')

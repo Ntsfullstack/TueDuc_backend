@@ -173,4 +173,10 @@ export class UsersService {
   async remove(id: string): Promise<void> {
     await this.userRepository.delete(id);
   }
+
+  async updateProfile(id: string, data: Partial<User>) {
+    const user = await this.findById(id);
+    await this.userRepository.update(id, data);
+    return this.findById(id);
+  }
 }

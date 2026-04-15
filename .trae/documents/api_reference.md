@@ -39,6 +39,12 @@ Hầu hết các API trả về danh sách đều hỗ trợ phân trang và tì
 ### GET `/users/me`
 - Quyền: `admin|teacher|parent`
 - Header: `Authorization: Bearer <token>`
+- Mô tả: Lấy thông tin cá nhân hiện tại.
+
+### PATCH `/users/me`
+- Quyền: `admin|teacher|parent`
+- Body: `UpdateProfileDto` (name, phoneNumber)
+- Mô tả: Cập nhật thông tin cá nhân.
 
 ### GET `/users/me/children`
 - Quyền: `parent`
