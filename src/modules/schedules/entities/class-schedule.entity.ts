@@ -22,7 +22,7 @@ export class ClassSchedule {
   @JoinColumn({ name: 'class_id' })
   class: Class;
 
-  @Column({ name: 'class_id' })
+  @Column({ name: 'class_id', type: 'uuid' })
   classId: string;
 
   @Column({ type: 'int' })
@@ -32,14 +32,14 @@ export class ClassSchedule {
   @JoinColumn({ name: 'shift_id' })
   shift: Shift;
 
-  @Column({ name: 'shift_id' })
+  @Column({ name: 'shift_id', type: 'uuid' })
   shiftId: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'teacher_id' })
   teacher: User;
 
-  @Column({ name: 'teacher_id' })
+  @Column({ name: 'teacher_id', type: 'uuid' })
   teacherId: string;
 
   @CreateDateColumn({ name: 'created_at' })

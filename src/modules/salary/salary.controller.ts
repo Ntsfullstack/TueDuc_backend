@@ -60,6 +60,15 @@ export class SalaryController {
     return this.salaryService.getTeacherSalaryByMonth(actor, teacherId, month);
   }
 
+  @Get('teachers/:teacherId/history')
+  @ApiOperation({ summary: 'Teacher salary history (admin/teacher self)' })
+  teacherSalaryHistory(
+    @CurrentUser() actor: CurrentUserData,
+    @Param('teacherId') teacherId: string,
+  ) {
+    return this.salaryService.getTeacherSalaryHistory(actor, teacherId);
+  }
+
   @Get('teachers/me')
   @ApiOperation({ summary: 'My salary report by month (teacher)' })
   mySalary(
@@ -71,5 +80,20 @@ export class SalaryController {
       actor.userId,
       month,
     );
+  }
+
+  @Get('me/history')
+  @ApiOperation({ summary: 'My salary history (teacher)' })
+  mySalaryHistory(@CurrentUser() actor: CurrentUserData) {
+    return this.salaryService.getTeacherSalaryHistory(actor, actor.userId);
+  }
+
+  @Get('summary')
+  @ApiOperation({ summary: 'Total salary summary for all teachers (admin)' })
+  async listSummary(
+    @CurrentUser() actor: CurrentUserData,
+    @Query('month') month: string,
+  ) {
+    return this.salaryService.getAllTeachersSalarySummary(actor, month);
   }
 }

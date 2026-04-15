@@ -354,12 +354,26 @@ Hầu hết các API trả về danh sách đều hỗ trợ phân trang và tì
   - `amountPerSession` (number)
 - Mô tả: Thiết lập đơn giá 1 buổi dạy theo ca cho giáo viên
 
+### GET `/salary/summary`
+- Quyền: `admin`
+- Query: `month` (YYYY-MM)
+- Mô tả: Tổng hợp lương của tất cả các giáo viên trong tháng. Trả về danh sách `{ teacherId, teacherName, totalSessions, totalAmount }`.
+
 ### GET `/salary/teachers/:teacherId/rates`
 - Quyền: `admin|teacher` (teacher chỉ xem của mình)
 
-### GET `/salary/teachers/:teacherId?month=YYYY-MM`
+### GET `/salary/teachers/:teacherId`
 - Quyền: `admin|teacher` (teacher chỉ xem của mình)
-- Mô tả: Báo cáo lương theo tháng dựa trên lịch dạy (class_schedules) và đơn giá theo ca
+- Query: `month` (YYYY-MM)
+- Mô tả: Chi tiết bảng lương của 1 giáo viên trong tháng nhất định.
+
+### GET `/salary/teachers/:teacherId/history`
+- Quyền: `admin|teacher` (teacher chỉ xem của mình)
+- Mô tả: Lịch sử lương của giáo viên trong 6 tháng gần nhất.
+
+### GET `/salary/me/history`
+- Quyền: `teacher`
+- Mô tả: Lịch sử lương của chính giáo viên đang đăng nhập (6 tháng gần nhất).
 
 ### GET `/salary/teachers/me?month=YYYY-MM`
 - Quyền: `teacher`

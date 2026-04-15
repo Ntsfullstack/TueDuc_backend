@@ -156,4 +156,70 @@ export class SalaryService {
       breakdown,
     };
   }
+
+  async getAllTeachersSalarySummary(actor: CurrentUserData, month: string) {
+    if (actor.role !== Role.ADMIN) {
+      throw new ForbiddenException();
+    }
+
+    const teachers = await this.userRepository.find({
+      where: { role: Role.TEACHER, isActive: true },
+    });
+
+    const summaries = await Promise.all(
+      teachers.map(async (t) => {
+        try {
+          const report = await this.getTeacherSalaryByMonth(actor, t.id, month);
+          return {
+            teacherId: t.id,
+            teacherName: t.name,
+            totalSessions: report.totalSessions,
+            totalAmount: report.totalAmount,
+          };
+        } catch (error) {
+          return {
+            teacherId: t.id,
+            teacherName: t.name,
+            totalSessions: 0,
+            totalAmount: 0,
+            error: error.message,
+          };
+        }
+      }),
+    );
+
+    return summaries;
+  }
+
+  async getTeacherSalaryHistory(actor: CurrentUserData, teacherId: string) {
+    if (
+      actor.role !== Role.ADMIN &&
+      !(actor.role === Role.TEACHER && actor.userId === teacherId)
+    ) {
+      throw new ForbiddenException();
+    }
+
+    // Default to last 6 months
+    const history = [];
+    const now = new Date();
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+      const year = d.getUTCFullYear();
+      const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const monthStr = `${year}-${month}`;
+
+      try {
+        const report = await this.getTeacherSalaryByMonth(actor, teacherId, monthStr);
+        history.push({
+          month: monthStr,
+          totalSessions: report.totalSessions,
+          totalAmount: report.totalAmount,
+        });
+      } catch (e) {
+        // Skip months with no data or errors
+      }
+    }
+
+    return history;
+  }
 }
