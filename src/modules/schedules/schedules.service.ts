@@ -88,11 +88,19 @@ export class SchedulesService {
       throw new NotFoundException('class not found');
     }
 
-    if (
-      actor.role === Role.TEACHER &&
-      classEntity.homeroomTeacherId !== actor.userId
-    ) {
-      throw new ForbiddenException();
+    if (actor.role === Role.TEACHER) {
+      const hasAccess = await this.classRepository
+        .createQueryBuilder('class')
+        .where('class.id = :classId', { classId })
+        .andWhere(
+          '(class.id IN (SELECT "class_id" FROM "class_schedules" WHERE "teacher_id" = :teacherId) OR ' +
+            'class.id IN (SELECT "class_id" FROM "courses" WHERE "teacher_id" = :teacherId))',
+          { teacherId: actor.userId },
+        )
+        .getExists();
+      if (!hasAccess) {
+        throw new ForbiddenException();
+      }
     }
     if (actor.role === Role.PARENT) {
       throw new ForbiddenException();
@@ -126,10 +134,16 @@ export class SchedulesService {
     }
 
     if (actor.role === Role.TEACHER) {
-      const classEntity = await this.classRepository.findOne({
-        where: { id: student.classId },
-      });
-      if (!classEntity || classEntity.homeroomTeacherId !== actor.userId) {
+      const hasAccess = await this.classRepository
+        .createQueryBuilder('class')
+        .where('class.id = :classId', { classId: student.classId })
+        .andWhere(
+          '(class.id IN (SELECT "class_id" FROM "class_schedules" WHERE "teacher_id" = :teacherId) OR ' +
+            'class.id IN (SELECT "class_id" FROM "courses" WHERE "teacher_id" = :teacherId))',
+          { teacherId: actor.userId },
+        )
+        .getExists();
+      if (!hasAccess) {
         throw new ForbiddenException();
       }
     }

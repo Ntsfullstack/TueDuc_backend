@@ -113,10 +113,10 @@ async function seed() {
   // 3. Seed Classes
   process.stdout.write('Seeding Classes...\n');
   const classes = await classRepo.save([
-    { name: 'Lớp 10A1', grade: '10', academicYear: '2023-2024', homeroomTeacherId: teachers[0].id, status: ClassStatus.OPEN },
-    { name: 'Lớp 11B2', grade: '11', academicYear: '2023-2024', homeroomTeacherId: teachers[1].id, status: ClassStatus.OPEN },
-    { name: 'Lớp 12C3', grade: '12', academicYear: '2023-2024', homeroomTeacherId: teachers[2].id, status: ClassStatus.OPEN },
-    { name: 'Lớp 10A2', grade: '10', academicYear: '2023-2024', homeroomTeacherId: teachers[3].id, status: ClassStatus.OPEN },
+    { name: 'Lớp 10A1', grade: '10', academicYear: '2023-2024', status: ClassStatus.OPEN },
+    { name: 'Lớp 11B2', grade: '11', academicYear: '2023-2024', status: ClassStatus.OPEN },
+    { name: 'Lớp 12C3', grade: '12', academicYear: '2023-2024', status: ClassStatus.OPEN },
+    { name: 'Lớp 10A2', grade: '10', academicYear: '2023-2024', status: ClassStatus.OPEN },
   ].map(c => classRepo.create(c)));
 
   // 4. Seed Students

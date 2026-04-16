@@ -43,12 +43,6 @@ export class Class {
   @Column({ name: 'cloned_from_id', type: 'uuid', nullable: true })
   clonedFromId: string | null;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'homeroom_teacher_id' })
-  homeroomTeacher: User;
-
-  @Column({ name: 'homeroom_teacher_id', nullable: true })
-  homeroomTeacherId: string;
 
   @OneToMany(() => Student, (student) => student.class)
   students: Student[];

@@ -24,11 +24,6 @@ export class CreateClassDto {
   @IsNotEmpty()
   academicYear: string;
 
-  @ApiProperty({ example: 'uuid-teacher', required: false })
-  @IsOptional()
-  @IsUUID()
-  homeroomTeacherId?: string;
-
   @ApiProperty({ example: 30, required: false })
   @IsOptional()
   @IsInt()

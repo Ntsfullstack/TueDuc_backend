@@ -28,20 +28,10 @@ export class ClassesService {
       throw new ForbiddenException();
     }
 
-    if (dto.homeroomTeacherId) {
-      const teacher = await this.userRepository.findOne({
-        where: { id: dto.homeroomTeacherId },
-      });
-      if (!teacher || teacher.role !== Role.TEACHER) {
-        throw new ForbiddenException('homeroomTeacherId is not a teacher');
-      }
-    }
-
     const classEntity = this.classRepository.create({
       name: dto.name,
       grade: dto.grade,
       academicYear: dto.academicYear,
-      homeroomTeacherId: dto.homeroomTeacherId,
       maxStudents: dto.maxStudents ?? null,
     });
 
@@ -56,14 +46,12 @@ export class ClassesService {
 
     const qb = this.classRepository
       .createQueryBuilder('class')
-      .leftJoinAndSelect('class.homeroomTeacher', 'homeroomTeacher')
       .leftJoinAndSelect('class.students', 'students');
 
     // Role-based access
     if (actor.role === Role.TEACHER) {
       qb.andWhere(
-        '(class.homeroomTeacherId = :teacherId OR ' +
-          'class.id IN (SELECT "class_id" FROM "class_schedules" WHERE "teacher_id" = :teacherId) OR ' +
+        '(class.id IN (SELECT "class_id" FROM "class_schedules" WHERE "teacher_id" = :teacherId) OR ' +
           'class.id IN (SELECT "class_id" FROM "courses" WHERE "teacher_id" = :teacherId))',
         { teacherId: actor.userId },
       );
@@ -95,7 +83,7 @@ export class ClassesService {
   async findById(actor: CurrentUserData, id: string) {
     const classEntity = await this.classRepository.findOne({
       where: { id },
-      relations: ['homeroomTeacher', 'students'],
+      relations: ['students'],
     });
     if (!classEntity) {
       throw new NotFoundException();
@@ -106,21 +94,18 @@ export class ClassesService {
     }
 
     if (actor.role === Role.TEACHER) {
-      if (classEntity.homeroomTeacherId !== actor.userId) {
-        // Fallback: check if the teacher has any schedule or course in this class
-        const hasAccess = await this.classRepository
-          .createQueryBuilder('class')
-          .where('class.id = :classId', { classId: id })
-          .andWhere(
-            '(class.id IN (SELECT "class_id" FROM "class_schedules" WHERE "teacher_id" = :teacherId) OR ' +
-              'class.id IN (SELECT "class_id" FROM "courses" WHERE "teacher_id" = :teacherId))',
-            { teacherId: actor.userId },
-          )
-          .getExists();
+      const hasAccess = await this.classRepository
+        .createQueryBuilder('class')
+        .where('class.id = :classId', { classId: id })
+        .andWhere(
+          '(class.id IN (SELECT "class_id" FROM "class_schedules" WHERE "teacher_id" = :teacherId) OR ' +
+            'class.id IN (SELECT "class_id" FROM "courses" WHERE "teacher_id" = :teacherId))',
+          { teacherId: actor.userId },
+        )
+        .getExists();
 
-        if (!hasAccess) {
-          throw new ForbiddenException();
-        }
+      if (!hasAccess) {
+        throw new ForbiddenException();
       }
       return classEntity;
     }
@@ -138,27 +123,17 @@ export class ClassesService {
       throw new NotFoundException();
     }
 
-    if (dto.homeroomTeacherId) {
-      const teacher = await this.userRepository.findOne({
-        where: { id: dto.homeroomTeacherId },
-      });
-      if (!teacher || teacher.role !== Role.TEACHER) {
-        throw new ForbiddenException('homeroomTeacherId is not a teacher');
-      }
-    }
-
     await this.classRepository.update(id, {
       name: dto.name ?? classEntity.name,
       grade: dto.grade ?? classEntity.grade,
       academicYear: dto.academicYear ?? classEntity.academicYear,
-      homeroomTeacherId: dto.homeroomTeacherId ?? classEntity.homeroomTeacherId,
       status: dto.status ?? classEntity.status,
       maxStudents: dto.maxStudents ?? classEntity.maxStudents,
     });
 
     return this.classRepository.findOne({
       where: { id },
-      relations: ['homeroomTeacher', 'students'],
+      relations: ['students'],
     });
   }
 
@@ -188,7 +163,7 @@ export class ClassesService {
     });
     return this.classRepository.findOne({
       where: { id },
-      relations: ['homeroomTeacher', 'students'],
+      relations: ['students'],
     });
   }
 
@@ -203,7 +178,7 @@ export class ClassesService {
     await this.classRepository.update(id, { status });
     return this.classRepository.findOne({
       where: { id },
-      relations: ['homeroomTeacher', 'students'],
+      relations: ['students'],
     });
   }
 
@@ -220,7 +195,6 @@ export class ClassesService {
         name: `${source.name} (Clone)`,
         grade: source.grade,
         academicYear: source.academicYear,
-        homeroomTeacherId: source.homeroomTeacherId,
         status: source.status,
         maxStudents: source.maxStudents,
         archivedAt: null,
@@ -229,7 +203,7 @@ export class ClassesService {
     );
     return this.classRepository.findOne({
       where: { id: cloned.id },
-      relations: ['homeroomTeacher', 'students'],
+      relations: ['students'],
     });
   }
 }

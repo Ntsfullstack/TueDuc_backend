@@ -108,15 +108,24 @@ export class HomeworksService {
 
     let teacherId = actor.userId;
     if (actor.role === Role.ADMIN) {
-      teacherId =
-        dto.teacherId || classEntity.homeroomTeacherId || actor.userId;
+      teacherId = dto.teacherId || actor.userId;
     }
 
-    if (
-      actor.role === Role.TEACHER &&
-      classEntity.homeroomTeacherId !== actor.userId
-    ) {
-      throw new ForbiddenException();
+    if (actor.role === Role.TEACHER) {
+      const hasAccess = await this.classRepository
+        .createQueryBuilder('class')
+        .where('class.id = :classId', { classId: dto.classId })
+        .andWhere(
+          '(class.id IN (SELECT "class_id" FROM "class_schedules" WHERE "teacher_id" = :teacherId) OR ' +
+            'class.id IN (SELECT "class_id" FROM "courses" WHERE "teacher_id" = :teacherId))',
+          { teacherId: actor.userId },
+        )
+        .getExists();
+      if (!hasAccess) {
+        throw new ForbiddenException();
+      }
+
+      teacherId = dto.teacherId || actor.userId;
     }
 
     const homework = await this.homeworkRepository.save(
@@ -281,10 +290,9 @@ export class HomeworksService {
     if (actor.role === Role.ADMIN) {
       if (classId) qb.andWhere('homework.classId = :classId', { classId });
       if (teacherId) qb.andWhere('homework.teacherId = :teacherId', { teacherId });
-    } else if (actor.role === Role.TEACHER) {
-      // Teacher can see homeworks they created OR homeworks for classes they manage as homeroom teacher
+      // Teacher can see homeworks they created OR homeworks for classes they manage
       qb.andWhere(
-        '(homework.teacherId = :actorId OR class.homeroomTeacherId = :actorId)',
+        '(homework.teacherId = :actorId OR class.id IN (SELECT "class_id" FROM "class_schedules" WHERE "teacher_id" = :actorId) OR class.id IN (SELECT "class_id" FROM "courses" WHERE "teacher_id" = :actorId))',
         { actorId: actor.userId },
       );
       if (classId) qb.andWhere('homework.classId = :classId', { classId });

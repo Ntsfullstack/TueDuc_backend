@@ -25,11 +25,6 @@ export class UpdateClassDto {
   @IsString()
   academicYear?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-teacher' })
-  @IsOptional()
-  @IsUUID()
-  homeroomTeacherId?: string;
-
   @ApiPropertyOptional({ enum: ClassStatus, example: ClassStatus.OPEN })
   @IsOptional()
   @IsEnum(ClassStatus)
