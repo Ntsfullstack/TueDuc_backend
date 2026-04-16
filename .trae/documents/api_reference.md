@@ -92,13 +92,14 @@ Hầu hết các API trả về danh sách đều hỗ trợ phân trang và tì
 
 ### GET `/classes`
 - Quyền: `admin|teacher`
-- Query: `page`, `limit`, `search`, `status`, `grade`, `academicYear`
-- Mô tả:
-  - `admin`: xem tất cả
-  - `teacher`: chỉ xem lớp chủ nhiệm
+- Query: `page`, `limit`, `search` (tên lớp), `status`, `grade`, `academicYear`
+- Mô tả: Lấy danh sách các lớp học (phân trang).
+  - Admin: Thấy toàn bộ.
+  - Teacher: Thấy các lớp mà họ làm **chủ nhiệm**, hoặc **có lớp dạy** (trong `courses`), hoặc **có lịch dạy** (trong `class_schedules`).
 
 ### GET `/classes/:id`
-- Quyền: `admin|teacher` (teacher chỉ xem lớp chủ nhiệm)
+- Quyền: `admin|teacher`
+- Mô tả: Lấy chi tiết một lớp học (yêu cầu quyền tương tự khi list).
 
 ### POST `/classes`
 - Quyền: `admin`
@@ -223,7 +224,7 @@ Hầu hết các API trả về danh sách đều hỗ trợ phân trang và tì
 ### POST `/attendance/mark`
 - Quyền: `teacher|admin`
 - Rule:
-  - `teacher` chỉ điểm danh lớp chủ nhiệm
+  - `teacher`
 - Body:
   - `classId`
   - `date` (YYYY-MM-DD)

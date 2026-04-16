@@ -61,9 +61,12 @@ export class ClassesService {
 
     // Role-based access
     if (actor.role === Role.TEACHER) {
-      qb.andWhere('class.homeroomTeacherId = :teacherId', {
-        teacherId: actor.userId,
-      });
+      qb.andWhere(
+        '(class.homeroomTeacherId = :teacherId OR ' +
+          'class.id IN (SELECT "class_id" FROM "class_schedules" WHERE "teacher_id" = :teacherId) OR ' +
+          'class.id IN (SELECT "class_id" FROM "courses" WHERE "teacher_id" = :teacherId))',
+        { teacherId: actor.userId },
+      );
     } else if (actor.role !== Role.ADMIN) {
       throw new ForbiddenException();
     }
@@ -104,7 +107,20 @@ export class ClassesService {
 
     if (actor.role === Role.TEACHER) {
       if (classEntity.homeroomTeacherId !== actor.userId) {
-        throw new ForbiddenException();
+        // Fallback: check if the teacher has any schedule or course in this class
+        const hasAccess = await this.classRepository
+          .createQueryBuilder('class')
+          .where('class.id = :classId', { classId: id })
+          .andWhere(
+            '(class.id IN (SELECT "class_id" FROM "class_schedules" WHERE "teacher_id" = :teacherId) OR ' +
+              'class.id IN (SELECT "class_id" FROM "courses" WHERE "teacher_id" = :teacherId))',
+            { teacherId: actor.userId },
+          )
+          .getExists();
+
+        if (!hasAccess) {
+          throw new ForbiddenException();
+        }
       }
       return classEntity;
     }
