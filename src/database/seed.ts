@@ -141,17 +141,34 @@ async function seed() {
   process.stdout.write('Seeding Courses...\n');
   const courses = await courseRepo.save([
     { name: 'Toán Học 10', code: 'MATH10', classId: classes[0].id, teacherId: teachers[0].id },
+    { name: 'Toán Học 11', code: 'MATH11', classId: classes[1].id, teacherId: teachers[0].id },
     { name: 'Ngữ Văn 10', code: 'LIT10', classId: classes[0].id, teacherId: teachers[4].id },
+    { name: 'Ngữ Văn 11', code: 'LIT11', classId: classes[1].id, teacherId: teachers[4].id },
     { name: 'Vật Lý 11', code: 'PHYS11', classId: classes[1].id, teacherId: teachers[1].id },
+    { name: 'Vật Lý 12', code: 'PHYS12', classId: classes[2].id, teacherId: teachers[1].id },
     { name: 'Hóa Học 12', code: 'CHEM12', classId: classes[2].id, teacherId: teachers[2].id },
+    { name: 'Hóa Học 10', code: 'CHEM10', classId: classes[0].id, teacherId: teachers[2].id },
   ].map(c => courseRepo.create(c)));
 
   // 6. Seed Schedules (Mon-Fri)
   process.stdout.write('Seeding Schedules...\n');
   const scheduleData: ClassSchedule[] = [];
   for (let day = 1; day <= 5; day++) {
+    // Teacher 0 teaches Class 0 (Shift 0) and Class 1 (Shift 1)
     scheduleData.push(scheduleRepo.create({ classId: classes[0].id, weekday: day, shiftId: shifts[0].id, teacherId: teachers[0].id }));
-    scheduleData.push(scheduleRepo.create({ classId: classes[1].id, weekday: day, shiftId: shifts[1].id, teacherId: teachers[1].id }));
+    scheduleData.push(scheduleRepo.create({ classId: classes[1].id, weekday: day, shiftId: shifts[1].id, teacherId: teachers[0].id }));
+    
+    // Teacher 4 teaches Class 0 (Shift 1) and Class 1 (Shift 0)
+    scheduleData.push(scheduleRepo.create({ classId: classes[0].id, weekday: day, shiftId: shifts[1].id, teacherId: teachers[4].id }));
+    scheduleData.push(scheduleRepo.create({ classId: classes[1].id, weekday: day, shiftId: shifts[0].id, teacherId: teachers[4].id }));
+    
+    // Teacher 2 teaches Class 0 (Shift 2) and Class 2 (Shift 1)
+    scheduleData.push(scheduleRepo.create({ classId: classes[0].id, weekday: day, shiftId: shifts[2].id, teacherId: teachers[2].id }));
+    scheduleData.push(scheduleRepo.create({ classId: classes[2].id, weekday: day, shiftId: shifts[1].id, teacherId: teachers[2].id }));
+
+    // Teacher 1 teaches Class 1 (Shift 2) and Class 2 (Shift 0)
+    scheduleData.push(scheduleRepo.create({ classId: classes[1].id, weekday: day, shiftId: shifts[2].id, teacherId: teachers[1].id }));
+    scheduleData.push(scheduleRepo.create({ classId: classes[2].id, weekday: day, shiftId: shifts[0].id, teacherId: teachers[1].id }));
   }
   await scheduleRepo.save(scheduleData);
 
