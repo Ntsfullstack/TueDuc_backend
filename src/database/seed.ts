@@ -174,6 +174,17 @@ async function seed() {
         const matchingSchedules = scheduleData.filter(s => s.classId === cls.id && s.weekday === weekday);
         for (const schedule of matchingSchedules) {
           const dateStr = d.toISOString().split('T')[0];
+          const isToday = dateStr === now.toISOString().split('T')[0];
+          
+          // Randomly skip attendance to allow testing "Take Attendance" feature
+          // Skip today for class[0] to ensure user can test it
+          if (isToday && cls.id === classes[0].id) {
+            continue;
+          }
+          if (Math.random() < 0.2) { // 20% skip chance for history
+            continue;
+          }
+
           const session = await sessionRepo.save(sessionRepo.create({
             classId: cls.id,
             date: dateStr,
