@@ -46,7 +46,7 @@ export class ClassesService {
 
     const qb = this.classRepository
       .createQueryBuilder('class')
-      .leftJoinAndSelect('class.students', 'students');
+      .loadRelationCountAndMap('class.studentCount', 'class.students');
 
     // Role-based access
     if (actor.role === Role.TEACHER) {
@@ -83,7 +83,7 @@ export class ClassesService {
   async findById(actor: CurrentUserData, id: string) {
     const classEntity = await this.classRepository.findOne({
       where: { id },
-      relations: ['students'],
+      relations: ['students', 'schedules', 'schedules.shift'],
     });
     if (!classEntity) {
       throw new NotFoundException();
@@ -133,7 +133,7 @@ export class ClassesService {
 
     return this.classRepository.findOne({
       where: { id },
-      relations: ['students'],
+      relations: ['students', 'schedules', 'schedules.shift'],
     });
   }
 
@@ -163,7 +163,7 @@ export class ClassesService {
     });
     return this.classRepository.findOne({
       where: { id },
-      relations: ['students'],
+      relations: ['students', 'schedules', 'schedules.shift'],
     });
   }
 
@@ -178,7 +178,7 @@ export class ClassesService {
     await this.classRepository.update(id, { status });
     return this.classRepository.findOne({
       where: { id },
-      relations: ['students'],
+      relations: ['students', 'schedules', 'schedules.shift'],
     });
   }
 
@@ -203,7 +203,7 @@ export class ClassesService {
     );
     return this.classRepository.findOne({
       where: { id: cloned.id },
-      relations: ['students'],
+      relations: ['students', 'schedules', 'schedules.shift'],
     });
   }
 }

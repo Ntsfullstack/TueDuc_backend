@@ -158,6 +158,40 @@ export class AttendanceService {
     return session;
   }
 
+  async getHistoryByClass(actor: CurrentUserData, classId: string) {
+    const classEntity = await this.classRepository.findOne({
+      where: { id: classId },
+    });
+    if (!classEntity) {
+      throw new NotFoundException('class not found');
+    }
+
+    if (actor.role === Role.TEACHER) {
+      const hasAccess = await this.classRepository
+        .createQueryBuilder('class')
+        .where('class.id = :classId', { classId })
+        .andWhere(
+          '(class.id IN (SELECT "class_id" FROM "class_schedules" WHERE "teacher_id" = :teacherId) OR ' +
+            'class.id IN (SELECT "class_id" FROM "courses" WHERE "teacher_id" = :teacherId))',
+          { teacherId: actor.userId },
+        )
+        .getExists();
+      if (!hasAccess) {
+        throw new ForbiddenException();
+      }
+    }
+
+    if (actor.role === Role.PARENT) {
+      throw new ForbiddenException();
+    }
+
+    return this.sessionRepository.find({
+      where: { classId },
+      relations: ['class', 'shift', 'records', 'records.student'],
+      order: { date: 'DESC' },
+    });
+  }
+
   async getByStudent(actor: CurrentUserData, studentId: string) {
     const student = await this.studentRepository.findOne({
       where: { id: studentId },

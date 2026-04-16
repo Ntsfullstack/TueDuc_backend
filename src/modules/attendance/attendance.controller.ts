@@ -45,6 +45,17 @@ export class AttendanceController {
     return this.attendanceService.getByClassDate(actor, classId, date, shiftId);
   }
 
+  @Get('class/:classId/history')
+  @ApiOperation({
+    summary: 'Get historical attendance sessions for a class (teacher/admin)',
+  })
+  getHistoryByClass(
+    @CurrentUser() actor: CurrentUserData,
+    @Param('classId') classId: string,
+  ) {
+    return this.attendanceService.getHistoryByClass(actor, classId);
+  }
+
   @Get('student/:studentId')
   @ApiOperation({
     summary: 'Get attendance records by student (parent/teacher/admin)',

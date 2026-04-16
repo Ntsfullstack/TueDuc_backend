@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Student } from '../../students/entities/student.entity';
+import { ClassSchedule } from '../../schedules/entities/class-schedule.entity';
 
 export enum ClassStatus {
   OPEN = 'open',
@@ -46,6 +47,9 @@ export class Class {
 
   @OneToMany(() => Student, (student) => student.class)
   students: Student[];
+
+  @OneToMany(() => ClassSchedule, (schedule) => schedule.class)
+  schedules: ClassSchedule[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
