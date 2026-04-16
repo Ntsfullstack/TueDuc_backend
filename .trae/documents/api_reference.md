@@ -418,7 +418,8 @@ Hầu hết các API trả về danh sách đều hỗ trợ phân trang và tì
 
 ### GET `/schedules/teacher/today`
 - Quyền: `teacher`
-- Mô tả: Shortcut lấy lịch dạy hôm nay
+- Mô tả: Lịch dạy của chính giáo viên trong ngày hôm nay.
+- Response: Danh sách tiết học kèm theo `attendanceId` (nếu đã điểm danh).
 
 ### GET `/schedules/teacher/me/week`
 - Quyền: `teacher`

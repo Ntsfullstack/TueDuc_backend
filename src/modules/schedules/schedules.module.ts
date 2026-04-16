@@ -5,12 +5,20 @@ import { Shift } from '../shifts/entities/shift.entity';
 import { Student } from '../students/entities/student.entity';
 import { User } from '../users/entities/user.entity';
 import { ClassSchedule } from './entities/class-schedule.entity';
+import { AttendanceSession } from '../attendance/entities/attendance-session.entity';
 import { SchedulesController } from './schedules.controller';
 import { SchedulesService } from './schedules.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ClassSchedule, Class, Student, User, Shift]),
+    TypeOrmModule.forFeature([
+      ClassSchedule,
+      Class,
+      Student,
+      User,
+      Shift,
+      AttendanceSession,
+    ]),
   ],
   controllers: [SchedulesController],
   providers: [SchedulesService],

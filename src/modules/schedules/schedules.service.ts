@@ -13,6 +13,7 @@ import { User } from '../users/entities/user.entity';
 import { Shift } from '../shifts/entities/shift.entity';
 import { CreateClassScheduleDto } from './dto/create-class-schedule.dto';
 import { ClassSchedule } from './entities/class-schedule.entity';
+import { AttendanceSession } from '../attendance/entities/attendance-session.entity';
 
 @Injectable()
 export class SchedulesService {
@@ -27,6 +28,8 @@ export class SchedulesService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Shift)
     private readonly shiftRepository: Repository<Shift>,
+    @InjectRepository(AttendanceSession)
+    private readonly sessionRepository: Repository<AttendanceSession>,
   ) {}
 
   async createClassSchedule(
@@ -144,10 +147,28 @@ export class SchedulesService {
     }
     const weekday = this.weekdayFromDate(date || new Date().toISOString());
     const teacherId = actor.userId;
-    return this.scheduleRepository.find({
+    const items = await this.scheduleRepository.find({
       where: { teacherId, weekday },
       relations: ['class', 'shift', 'teacher'],
     });
+
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    return Promise.all(
+      items.map(async (item) => {
+        const session = await this.sessionRepository.findOne({
+          where: {
+            classId: item.classId,
+            date: targetDate,
+            shiftId: item.shiftId,
+          },
+          select: ['id'],
+        });
+        return {
+          ...item,
+          attendanceId: session?.id || null,
+        };
+      }),
+    );
   }
 
   async getTeacherScheduleWeek(actor: CurrentUserData, startDate: string) {
@@ -177,10 +198,28 @@ export class SchedulesService {
       throw new NotFoundException('teacher not found');
     }
     const weekday = this.weekdayFromDate(date || new Date().toISOString());
-    return this.scheduleRepository.find({
+    const items = await this.scheduleRepository.find({
       where: { teacherId, weekday },
       relations: ['class', 'shift', 'teacher'],
     });
+
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    return Promise.all(
+      items.map(async (item) => {
+        const session = await this.sessionRepository.findOne({
+          where: {
+            classId: item.classId,
+            date: targetDate,
+            shiftId: item.shiftId,
+          },
+          select: ['id'],
+        });
+        return {
+          ...item,
+          attendanceId: session?.id || null,
+        };
+      }),
+    );
   }
 
   private parseStartDate(start: string) {
