@@ -18,6 +18,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { AttendanceService } from './attendance.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
+import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
 @ApiTags('attendance')
 @ApiBearerAuth()
@@ -52,8 +53,9 @@ export class AttendanceController {
   getHistoryByClass(
     @CurrentUser() actor: CurrentUserData,
     @Param('classId') classId: string,
+    @Query() query: PaginationQueryDto,
   ) {
-    return this.attendanceService.getHistoryByClass(actor, classId);
+    return this.attendanceService.getHistoryByClass(actor, classId, query);
   }
 
   @Get('student/:studentId')

@@ -125,7 +125,7 @@ export class HomeworksService {
         throw new ForbiddenException();
       }
 
-      teacherId = dto.teacherId || actor.userId;
+      teacherId = actor.userId;
     }
 
     const homework = await this.homeworkRepository.save(
@@ -290,12 +290,13 @@ export class HomeworksService {
     if (actor.role === Role.ADMIN) {
       if (classId) qb.andWhere('homework.classId = :classId', { classId });
       if (teacherId) qb.andWhere('homework.teacherId = :teacherId', { teacherId });
+    } else if (actor.role === Role.TEACHER) {
+      if (classId) qb.andWhere('homework.classId = :classId', { classId });
       // Teacher can see homeworks they created OR homeworks for classes they manage
       qb.andWhere(
         '(homework.teacherId = :actorId OR class.id IN (SELECT "class_id" FROM "class_schedules" WHERE "teacher_id" = :actorId) OR class.id IN (SELECT "class_id" FROM "courses" WHERE "teacher_id" = :actorId))',
         { actorId: actor.userId },
       );
-      if (classId) qb.andWhere('homework.classId = :classId', { classId });
     } else if (actor.role === Role.PARENT) {
       const parentChildId = studentId; // If provided, filter by specific child
       const children = await this.studentRepository.find({

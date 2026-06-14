@@ -17,6 +17,8 @@ import { AttendanceSession } from './entities/attendance-session.entity';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import { AttendanceEditLog } from './entities/attendance-edit-log.entity';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
+import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { PaginatedResponse } from '../../common/dto/paginated-response.dto';
 
 @Injectable()
 export class AttendanceService {
@@ -158,7 +160,7 @@ export class AttendanceService {
     return session;
   }
 
-  async getHistoryByClass(actor: CurrentUserData, classId: string) {
+  async getHistoryByClass(actor: CurrentUserData, classId: string, query: PaginationQueryDto) {
     const classEntity = await this.classRepository.findOne({
       where: { id: classId },
     });
@@ -185,11 +187,17 @@ export class AttendanceService {
       throw new ForbiddenException();
     }
 
-    return this.sessionRepository.find({
+    const { page = 1, limit = 20 } = query;
+
+    const [data, total] = await this.sessionRepository.findAndCount({
       where: { classId },
       relations: ['class', 'shift', 'records', 'records.student'],
       order: { date: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+
+    return new PaginatedResponse(data, total, page, limit);
   }
 
   async getByStudent(actor: CurrentUserData, studentId: string) {
