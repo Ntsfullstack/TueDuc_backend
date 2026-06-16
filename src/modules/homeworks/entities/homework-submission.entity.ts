@@ -4,6 +4,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
@@ -11,6 +12,7 @@ import {
 import { Student } from '../../students/entities/student.entity';
 import { User } from '../../users/entities/user.entity';
 import { Homework } from './homework.entity';
+import { HomeworkSubmissionComment } from './homework-submission-comment.entity';
 
 export enum HomeworkSubmissionStatus {
   SUBMITTED = 'submitted',
@@ -60,8 +62,8 @@ export class HomeworkSubmission {
   @Column({ type: 'decimal', precision: 4, scale: 1, nullable: true })
   score: number | null;
 
-  @Column({ type: 'text', nullable: true })
-  feedback: string;
+  @OneToMany(() => HomeworkSubmissionComment, (comment) => comment.submission)
+  comments: HomeworkSubmissionComment[];
 
   @Column({ name: 'submitted_at', type: 'timestamptz', default: () => 'now()' })
   submittedAt: Date;

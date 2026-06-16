@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Delete,
   Query,
   UploadedFiles,
   UseGuards,
@@ -31,6 +32,8 @@ import { SubmitEssayDto } from './dto/submit-essay.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { UpdateHomeworkDto } from './dto/update-homework.dto';
 import { ListHomeworkQueryDto } from './dto/list-homework-query.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
+import { UpdateCommentDto } from './dto/update-comment.dto';
 import { HomeworksService } from './homeworks.service';
 
 @ApiTags('homeworks')
@@ -137,5 +140,43 @@ export class HomeworksController {
     @Body() dto: GradeSubmissionDto,
   ) {
     return this.homeworksService.gradeSubmission(actor, submissionId, dto);
+  }
+
+  @Post('submissions/:submissionId/comments')
+  @ApiOperation({ summary: 'Create a comment on a submission (teacher/admin)' })
+  createComment(
+    @CurrentUser() actor: CurrentUserData,
+    @Param('submissionId') submissionId: string,
+    @Body() dto: CreateCommentDto,
+  ) {
+    return this.homeworksService.createComment(actor, submissionId, dto);
+  }
+
+  @Get('submissions/:submissionId/comments')
+  @ApiOperation({ summary: 'Get comments of a submission (teacher/admin/parent)' })
+  getComments(
+    @CurrentUser() actor: CurrentUserData,
+    @Param('submissionId') submissionId: string,
+  ) {
+    return this.homeworksService.getComments(actor, submissionId);
+  }
+
+  @Patch('submissions/comments/:commentId')
+  @ApiOperation({ summary: 'Update a comment (comment author)' })
+  updateComment(
+    @CurrentUser() actor: CurrentUserData,
+    @Param('commentId') commentId: string,
+    @Body() dto: UpdateCommentDto,
+  ) {
+    return this.homeworksService.updateComment(actor, commentId, dto);
+  }
+
+  @Delete('submissions/comments/:commentId')
+  @ApiOperation({ summary: 'Delete a comment (comment author/admin)' })
+  deleteComment(
+    @CurrentUser() actor: CurrentUserData,
+    @Param('commentId') commentId: string,
+  ) {
+    return this.homeworksService.deleteComment(actor, commentId);
   }
 }

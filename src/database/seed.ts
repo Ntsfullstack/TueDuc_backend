@@ -14,6 +14,7 @@ import { AttendanceRecord, AttendanceStatus } from '../modules/attendance/entiti
 import { Homework, HomeworkType, HomeworkTargetScope } from '../modules/homeworks/entities/homework.entity';
 import { HomeworkTarget } from '../modules/homeworks/entities/homework-target.entity';
 import { HomeworkSubmission, HomeworkSubmissionStatus } from '../modules/homeworks/entities/homework-submission.entity';
+import { HomeworkSubmissionComment } from '../modules/homeworks/entities/homework-submission-comment.entity';
 import { Assessment } from '../modules/assessments/entities/assessment.entity';
 import { TeacherSalaryRate } from '../modules/salary/entities/teacher-salary-rate.entity';
 import { StudentTuitionPlan } from '../modules/tuition/entities/student-tuition-plan.entity';
@@ -32,7 +33,7 @@ async function seed() {
     entities: [
       User, Shift, Class, Student, Course, 
       ClassSchedule, AttendanceSession, AttendanceRecord,
-      Homework, HomeworkTarget, HomeworkSubmission,
+      Homework, HomeworkTarget, HomeworkSubmission, HomeworkSubmissionComment,
       Assessment, TeacherSalaryRate, StudentTuitionPlan, TuitionPayment
     ],
     synchronize: true,
@@ -47,7 +48,7 @@ async function seed() {
   // Truncate all tables to start fresh
   const tables = [
     'tuition_payments', 'student_tuition_plans', 'teacher_salary_rates',
-    'assessments', 'homework_submissions', 'homework_targets', 'homeworks',
+    'assessments', 'homework_submission_comments', 'homework_submissions', 'homework_targets', 'homeworks',
     'attendance_records', 'attendance_sessions', 'class_schedules',
     'courses', 'students', 'classes', 'shifts', 'users'
   ];
@@ -250,7 +251,13 @@ async function seed() {
           studentId: s.id,
           parentId: s.parentId,
           status: Math.random() > 0.5 ? HomeworkSubmissionStatus.SUBMITTED : HomeworkSubmissionStatus.GRADED,
-          attachments: { url: 'https://example.com/homework.pdf' },
+          attachments: [
+            { url: 'https://images.unsplash.com/photo-1544640808-32cbef10ca5c?w=500', type: 'image/jpeg', name: 'baitap_trang1.jpg' },
+            { url: 'https://images.unsplash.com/photo-1453728013993-6d66e9c9123a?w=500', type: 'image/jpeg', name: 'baitap_trang2.jpg' },
+            { url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', type: 'application/pdf', name: 'tailieu_thamkhao.pdf' },
+            { url: 'https://file-examples.com/wp-content/storage/2017/02/file-sample_100kB.doc', type: 'application/msword', name: 'baocao.doc' },
+            { url: 'https://file-examples.com/wp-content/storage/2017/02/file_example_XLSX_10.xlsx', type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', name: 'bangdiem.xlsx' }
+          ],
           score: Math.random() > 0.5 ? Math.floor(Math.random() * 10) + 1 : undefined,
         }));
       }

@@ -6,6 +6,7 @@ import { User } from '../users/entities/user.entity';
 import { HomeworksController } from './homeworks.controller';
 import { HomeworksService } from './homeworks.service';
 import { HomeworkSubmission } from './entities/homework-submission.entity';
+import { HomeworkSubmissionComment } from './entities/homework-submission-comment.entity';
 import { HomeworkTarget } from './entities/homework-target.entity';
 import { Homework } from './entities/homework.entity';
 
@@ -15,6 +16,7 @@ import { Homework } from './entities/homework.entity';
       Homework,
       HomeworkTarget,
       HomeworkSubmission,
+      HomeworkSubmissionComment,
       Class,
       Student,
       User,

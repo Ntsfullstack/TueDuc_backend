@@ -13,6 +13,8 @@ import { Student } from '../students/entities/student.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateHomeworkDto } from './dto/create-homework.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
+import { UpdateCommentDto } from './dto/update-comment.dto';
 import { ListHomeworkQueryDto } from './dto/list-homework-query.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { UpdateHomeworkDto } from './dto/update-homework.dto';
@@ -25,6 +27,7 @@ import {
   HomeworkSubmission,
   HomeworkSubmissionStatus,
 } from './entities/homework-submission.entity';
+import { HomeworkSubmissionComment } from './entities/homework-submission-comment.entity';
 import { HomeworkTarget } from './entities/homework-target.entity';
 
 @Injectable()
@@ -63,6 +66,8 @@ export class HomeworksService {
     private readonly targetRepository: Repository<HomeworkTarget>,
     @InjectRepository(HomeworkSubmission)
     private readonly submissionRepository: Repository<HomeworkSubmission>,
+    @InjectRepository(HomeworkSubmissionComment)
+    private readonly commentRepository: Repository<HomeworkSubmissionComment>,
     @InjectRepository(Class)
     private readonly classRepository: Repository<Class>,
     @InjectRepository(Student)
@@ -566,7 +571,6 @@ export class HomeworksService {
 
     await this.submissionRepository.update(submissionId, {
       score: dto.score ?? submission.score,
-      feedback: dto.feedback ?? submission.feedback,
       status: HomeworkSubmissionStatus.GRADED,
     });
 
@@ -574,6 +578,77 @@ export class HomeworksService {
       where: { id: submissionId },
       relations: ['student', 'parent'],
     });
+  }
+
+  async createComment(
+    actor: CurrentUserData,
+    submissionId: string,
+    dto: CreateCommentDto,
+  ) {
+    const submission = await this.submissionRepository.findOne({
+      where: { id: submissionId },
+      relations: ['homework'],
+    });
+    if (!submission) throw new NotFoundException('submission not found');
+
+    if (actor.role === Role.TEACHER && submission.homework.teacherId !== actor.userId) {
+      throw new ForbiddenException();
+    }
+    if (actor.role === Role.PARENT && submission.parentId !== actor.userId) {
+      throw new ForbiddenException();
+    }
+
+    const comment = this.commentRepository.create({
+      submissionId,
+      userId: actor.userId,
+      content: dto.content,
+    });
+    return this.commentRepository.save(comment);
+  }
+
+  async getComments(actor: CurrentUserData, submissionId: string) {
+    const submission = await this.submissionRepository.findOne({
+      where: { id: submissionId },
+      relations: ['homework'],
+    });
+    if (!submission) throw new NotFoundException('submission not found');
+
+    if (actor.role === Role.TEACHER && submission.homework.teacherId !== actor.userId) {
+      throw new ForbiddenException();
+    }
+    if (actor.role === Role.PARENT && submission.parentId !== actor.userId) {
+      throw new ForbiddenException();
+    }
+
+    return this.commentRepository.find({
+      where: { submissionId },
+      relations: ['user'],
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async updateComment(actor: CurrentUserData, commentId: string, dto: UpdateCommentDto) {
+    const comment = await this.commentRepository.findOne({ where: { id: commentId } });
+    if (!comment) throw new NotFoundException('comment not found');
+
+    if (comment.userId !== actor.userId) {
+      throw new ForbiddenException('You can only edit your own comments');
+    }
+
+    comment.content = dto.content;
+    return this.commentRepository.save(comment);
+  }
+
+  async deleteComment(actor: CurrentUserData, commentId: string) {
+    const comment = await this.commentRepository.findOne({ where: { id: commentId } });
+    if (!comment) throw new NotFoundException('comment not found');
+
+    if (comment.userId !== actor.userId && actor.role !== Role.ADMIN) {
+      throw new ForbiddenException('You can only delete your own comments');
+    }
+
+    await this.commentRepository.remove(comment);
+    return { success: true };
   }
 
   async homeworkStatus(actor: CurrentUserData, homeworkId: string) {
